@@ -1,1 +1,324 @@
-PASTE YOUR ENTIRE HTML CODE HERE
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aromatic Ring Sandbox</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #f6f7fb;
+      color: #222;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    select, button {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid #b8bfd0;
+      font-size: 14px;
+      background: white;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    #board {
+      position: relative;
+      width: 100%;
+      max-width: 1200px;
+      height: 700px;
+      border: 2px solid #2f3542;
+      border-radius: 16px;
+      background:
+        linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px),
+        #fcfcff;
+      background-size: 24px 24px;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .piece {
+      position: absolute;
+      border-radius: 14px;
+      padding: 10px 14px;
+      cursor: grab;
+      user-select: none;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+      transition: box-shadow 0.15s ease;
+    }
+
+    .piece:active {
+      cursor: grabbing;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+    }
+
+    .molecule {
+      background: white;
+      border: 2px solid #444;
+      min-width: 120px;
+      text-align: center;
+    }
+
+    .mol-name {
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+
+    .mol-formula {
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .mol-note {
+      font-size: 12px;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    .arrow {
+      font-size: 54px;
+      background: transparent;
+      box-shadow: none;
+      padding: 0;
+      border: none;
+      min-width: auto;
+    }
+
+    .label {
+      background: #fff3bf;
+      border: 1px solid #cfb75a;
+      font-size: 14px;
+    }
+
+    .delete-hint {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #555;
+    }
+
+    .footer-note {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h2>🌸 Aromatic Ring Sandbox</h2>
+
+  <div class="toolbar">
+    <label for="moleculeSelect"><strong>Select aromatic molecule:</strong></label>
+    <select id="moleculeSelect">
+      <option value="benzene">Benzene</option>
+      <option value="toluene">Toluene</option>
+      <option value="phenol">Phenol</option>
+      <option value="aniline">Aniline</option>
+      <option value="anisole">Anisole</option>
+      <option value="benzoic_acid">Benzoic acid</option>
+      <option value="chlorobenzene">Chlorobenzene</option>
+      <option value="nitrobenzene">Nitrobenzene</option>
+      <option value="bromobenzene">Bromobenzene</option>
+      <option value="naphthalene">Naphthalene</option>
+    </select>
+
+    <button onclick="addSelectedMolecule()">Add Molecule</button>
+    <button onclick="resetBoard()">Reset Board</button>
+    <button onclick="clearAddedMolecules()">Clear Added Molecules</button>
+  </div>
+
+  <div id="board">
+    <div class="piece molecule default-piece" id="default1" data-x="70" data-y="110" style="left:70px; top:110px;">
+      <div class="mol-name">Benzene</div>
+      <div class="mol-formula">⌬</div>
+      <div class="mol-note">C₆H₆</div>
+    </div>
+
+    <div class="piece molecule default-piece" id="default2" data-x="70" data-y="290" style="left:70px; top:290px;">
+      <div class="mol-name">Br₂ / FeBr₃</div>
+      <div class="mol-formula">Br₂</div>
+      <div class="mol-note">electrophilic bromination</div>
+    </div>
+
+    <div class="piece arrow default-piece" id="default3" data-x="360" data-y="180" style="left:360px; top:180px;">
+      ⟶
+    </div>
+
+    <div class="piece molecule default-piece" id="default4" data-x="700" data-y="110" style="left:700px; top:110px;">
+      <div class="mol-name">Bromobenzene</div>
+      <div class="mol-formula">⌬−Br</div>
+      <div class="mol-note">product idea</div>
+    </div>
+
+    <div class="piece label default-piece" id="default5" data-x="300" data-y="90" style="left:300px; top:90px;">
+      aromatic substitution sandbox
+    </div>
+  </div>
+
+  <div class="delete-hint">
+    Double-click any added molecule to remove it.
+  </div>
+
+  <div class="footer-note">
+    This version uses symbolic molecule cards for easy dragging. Later, you can swap these for actual structure images.
+  </div>
+
+  <script>
+    const board = document.getElementById("board");
+    let activePiece = null;
+    let offsetX = 0;
+    let offsetY = 0;
+    let addedCounter = 0;
+
+    const moleculeLibrary = {
+      benzene: {
+        name: "Benzene",
+        formula: "⌬",
+        note: "C₆H₆"
+      },
+      toluene: {
+        name: "Toluene",
+        formula: "⌬−CH₃",
+        note: "methylbenzene"
+      },
+      phenol: {
+        name: "Phenol",
+        formula: "⌬−OH",
+        note: "hydroxybenzene"
+      },
+      aniline: {
+        name: "Aniline",
+        formula: "⌬−NH₂",
+        note: "aminobenzene"
+      },
+      anisole: {
+        name: "Anisole",
+        formula: "⌬−OCH₃",
+        note: "methoxybenzene"
+      },
+      benzoic_acid: {
+        name: "Benzoic acid",
+        formula: "⌬−COOH",
+        note: "aromatic carboxylic acid"
+      },
+      chlorobenzene: {
+        name: "Chlorobenzene",
+        formula: "⌬−Cl",
+        note: "aryl halide"
+      },
+      nitrobenzene: {
+        name: "Nitrobenzene",
+        formula: "⌬−NO₂",
+        note: "deactivating group"
+      },
+      bromobenzene: {
+        name: "Bromobenzene",
+        formula: "⌬−Br",
+        note: "aryl bromide"
+      },
+      naphthalene: {
+        name: "Naphthalene",
+        formula: "⌬⌬",
+        note: "fused aromatic system"
+      }
+    };
+
+    function makeDraggable(el) {
+      el.addEventListener("mousedown", function(e) {
+        activePiece = el;
+        const rect = el.getBoundingClientRect();
+        const boardRect = board.getBoundingClientRect();
+
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+
+        el.style.zIndex = Date.now().toString().slice(-6);
+        e.preventDefault();
+      });
+    }
+
+    function clampToBoard(el, x, y) {
+      const maxX = board.clientWidth - el.offsetWidth;
+      const maxY = board.clientHeight - el.offsetHeight;
+      return {
+        x: Math.max(0, Math.min(x, maxX)),
+        y: Math.max(0, Math.min(y, maxY))
+      };
+    }
+
+    document.addEventListener("mousemove", function(e) {
+      if (!activePiece) return;
+
+      const boardRect = board.getBoundingClientRect();
+      let x = e.clientX - boardRect.left - offsetX;
+      let y = e.clientY - boardRect.top - offsetY;
+
+      const pos = clampToBoard(activePiece, x, y);
+      activePiece.style.left = pos.x + "px";
+      activePiece.style.top = pos.y + "px";
+    });
+
+    document.addEventListener("mouseup", function() {
+      activePiece = null;
+    });
+
+    function addSelectedMolecule() {
+      const select = document.getElementById("moleculeSelect");
+      const key = select.value;
+      const mol = moleculeLibrary[key];
+
+      addedCounter += 1;
+
+      const div = document.createElement("div");
+      div.className = "piece molecule added-piece";
+      div.id = "added_" + addedCounter;
+      div.style.left = (140 + (addedCounter % 5) * 40) + "px";
+      div.style.top = (430 + (addedCounter % 4) * 28) + "px";
+
+      div.innerHTML = `
+        <div class="mol-name">${mol.name}</div>
+        <div class="mol-formula">${mol.formula}</div>
+        <div class="mol-note">${mol.note}</div>
+      `;
+
+      div.addEventListener("dblclick", function() {
+        div.remove();
+      });
+
+      board.appendChild(div);
+      makeDraggable(div);
+    }
+
+    function resetBoard() {
+      document.querySelectorAll(".default-piece").forEach(el => {
+        el.style.left = el.dataset.x + "px";
+        el.style.top = el.dataset.y + "px";
+      });
+
+      clearAddedMolecules();
+    }
+
+    function clearAddedMolecules() {
+      document.querySelectorAll(".added-piece").forEach(el => el.remove());
+    }
+
+    document.querySelectorAll(".piece").forEach(makeDraggable);
+  </script>
+</body>
+</html>
