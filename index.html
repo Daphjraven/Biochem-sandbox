@@ -5,9 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SMILES Molecule Sandbox</title>
 
-  <!-- Load SmilesDrawer FIRST -->
+  <!-- Load SmilesDrawer before the page script -->
   <script src="https://cdn.jsdelivr.net/npm/smiles-drawer@2.0.3/dist/smiles-drawer.min.js"></script>
-</head>
 
   <style>
     body {
@@ -19,8 +18,7 @@
     }
 
     h2 {
-      margin-top: 0;
-      margin-bottom: 10px;
+      margin: 0 0 10px 0;
     }
 
     .toolbar {
@@ -31,7 +29,9 @@
       margin-bottom: 14px;
     }
 
-    select, input, button {
+    select,
+    input,
+    button {
       padding: 8px 12px;
       border-radius: 10px;
       border: 1px solid #b8bfd0;
@@ -40,7 +40,7 @@
     }
 
     input {
-      min-width: 260px;
+      min-width: 280px;
     }
 
     button {
@@ -55,8 +55,8 @@
       border: 2px solid #2f3542;
       border-radius: 16px;
       background:
-        linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px),
+        linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
         #fcfcff;
       background-size: 24px 24px;
       overflow: hidden;
@@ -69,13 +69,13 @@
       padding: 10px 14px;
       cursor: grab;
       user-select: none;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
       transition: box-shadow 0.15s ease;
     }
 
     .piece:active {
       cursor: grabbing;
-      box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
     }
 
     .molecule {
@@ -143,6 +143,7 @@
 
   <div class="toolbar">
     <label for="moleculeSelect"><strong>Select molecule:</strong></label>
+
     <select id="moleculeSelect">
       <option value="benzene">Benzene</option>
       <option value="toluene">Toluene</option>
@@ -156,38 +157,66 @@
       <option value="naphthalene">Naphthalene</option>
     </select>
 
-    <button onclick="addSelectedMolecule()">Add Molecule</button>
+    <button type="button" onclick="addSelectedMolecule()">Add Molecule</button>
 
     <input
       id="smilesInput"
       type="text"
       placeholder="Enter custom SMILES, e.g. c1ccccc1O"
     />
-    <button onclick="addSmilesMolecule()">Add from SMILES</button>
 
-    <button onclick="resetBoard()">Reset Board</button>
-    <button onclick="clearAddedMolecules()">Clear Added Molecules</button>
+    <button type="button" onclick="addSmilesMolecule()">Add from SMILES</button>
+    <button type="button" onclick="resetBoard()">Reset Board</button>
+    <button type="button" onclick="clearAddedMolecules()">Clear Added Molecules</button>
   </div>
 
   <div id="board">
-    <div class="piece molecule default-piece" id="default1" data-x="60" data-y="80" style="left:60px; top:80px;">
+    <div
+      class="piece molecule default-piece"
+      id="default1"
+      data-x="60"
+      data-y="80"
+      style="left:60px; top:80px;"
+    >
       <div class="mol-name">Benzene</div>
       <div class="mol-note">c1ccccc1</div>
-      <div class="mol-drawing" id="defaultDrawing1"></div>
+      <div class="mol-drawing">
+        <canvas id="defaultDrawing1" width="200" height="120"></canvas>
+      </div>
     </div>
 
-    <div class="piece label default-piece" id="default2" data-x="340" data-y="100" style="left:340px; top:100px;">
+    <div
+      class="piece label default-piece"
+      id="default2"
+      data-x="340"
+      data-y="100"
+      style="left:340px; top:100px;"
+    >
       electrophilic aromatic substitution sandbox
     </div>
 
-    <div class="piece arrow default-piece" id="default3" data-x="420" data-y="220" style="left:420px; top:220px;">
+    <div
+      class="piece arrow default-piece"
+      id="default3"
+      data-x="420"
+      data-y="220"
+      style="left:420px; top:220px;"
+    >
       ⟶
     </div>
 
-    <div class="piece molecule default-piece" id="default4" data-x="650" data-y="80" style="left:650px; top:80px;">
+    <div
+      class="piece molecule default-piece"
+      id="default4"
+      data-x="650"
+      data-y="80"
+      style="left:650px; top:80px;"
+    >
       <div class="mol-name">Bromobenzene</div>
       <div class="mol-note">Bromination example product</div>
-      <div class="mol-drawing" id="defaultDrawing2"></div>
+      <div class="mol-drawing">
+        <canvas id="defaultDrawing2" width="200" height="120"></canvas>
+      </div>
     </div>
   </div>
 
@@ -196,7 +225,7 @@
   </div>
 
   <div class="footer-note">
-    You can type a SMILES string and drop the generated molecule right onto the board.
+    Type a SMILES string and drop the generated molecule onto the board.
   </div>
 
   <script>
@@ -260,14 +289,14 @@
     };
 
     function makeDraggable(el) {
-      el.addEventListener("mousedown", function(e) {
+      el.addEventListener("mousedown", function (e) {
         activePiece = el;
         const rect = el.getBoundingClientRect();
 
         offsetX = e.clientX - rect.left;
         offsetY = e.clientY - rect.top;
 
-        el.style.zIndex = Date.now().toString().slice(-6);
+        el.style.zIndex = String(Date.now()).slice(-6);
         e.preventDefault();
       });
     }
@@ -275,104 +304,101 @@
     function clampToBoard(el, x, y) {
       const maxX = board.clientWidth - el.offsetWidth;
       const maxY = board.clientHeight - el.offsetHeight;
+
       return {
         x: Math.max(0, Math.min(x, maxX)),
         y: Math.max(0, Math.min(y, maxY))
       };
     }
 
-    document.addEventListener("mousemove", function(e) {
+    document.addEventListener("mousemove", function (e) {
       if (!activePiece) return;
 
       const boardRect = board.getBoundingClientRect();
-      let x = e.clientX - boardRect.left - offsetX;
-      let y = e.clientY - boardRect.top - offsetY;
-
+      const x = e.clientX - boardRect.left - offsetX;
+      const y = e.clientY - boardRect.top - offsetY;
       const pos = clampToBoard(activePiece, x, y);
+
       activePiece.style.left = pos.x + "px";
       activePiece.style.top = pos.y + "px";
     });
 
-    document.addEventListener("mouseup", function() {
+    document.addEventListener("mouseup", function () {
       activePiece = null;
     });
 
-function renderSmilesToCanvas(canvasId, smiles) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
+    function renderSmilesToCanvas(canvasId, smiles) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
 
-  if (typeof SmilesDrawer === "undefined") {
-    const parent = canvas.parentElement;
-    parent.innerHTML = `<div class="invalid-smiles">SmilesDrawer failed to load</div>`;
-    return;
-  }
+      if (!window.SmilesDrawer) {
+        const parent = canvas.parentElement;
+        parent.innerHTML = `<div class="invalid-smiles">SmilesDrawer failed to load</div>`;
+        return;
+      }
 
-  SmilesDrawer.parse(
-    smiles,
-    function(tree) {
-      const drawer = new SmilesDrawer.Drawer({
-        width: 200,
-        height: 120,
-        padding: 6
-      });
-      drawer.draw(tree, canvas, "light", false);
-    },
-    function() {
-      const parent = canvas.parentElement;
-      parent.innerHTML = `<div class="invalid-smiles">Invalid SMILES</div>`;
+      SmilesDrawer.parse(
+        smiles,
+        function (tree) {
+          const drawer = new SmilesDrawer.Drawer({
+            width: 200,
+            height: 120,
+            padding: 6
+          });
+
+          drawer.draw(tree, canvas, "light", false);
+        },
+        function () {
+          const parent = canvas.parentElement;
+          parent.innerHTML = `<div class="invalid-smiles">Invalid SMILES</div>`;
+        }
+      );
     }
-  );
-}
 
-    function createMoleculeCard({ name, smiles, note }, left = 140, top = 430, isDefault = false) {
+    function createMoleculeCard(molecule, left = 140, top = 430) {
       addedCounter += 1;
-      const idSuffix = isDefault ? "default_" + addedCounter : "added_" + addedCounter;
-      const canvasId = "canvas_" + idSuffix;
 
+      const canvasId = "canvas_added_" + addedCounter;
       const div = document.createElement("div");
-      div.className = `piece molecule ${isDefault ? "default-piece" : "added-piece"}`;
-      div.id = idSuffix;
+
+      div.className = "piece molecule added-piece";
+      div.id = "added_" + addedCounter;
       div.style.left = left + "px";
       div.style.top = top + "px";
 
       div.innerHTML = `
-        <div class="mol-name">${name}</div>
-        <div class="mol-note">${note ? note : ""}</div>
-        <div class="mol-note">${smiles}</div>
+        <div class="mol-name">${molecule.name}</div>
+        <div class="mol-note">${molecule.note || ""}</div>
+        <div class="mol-note">${molecule.smiles}</div>
         <div class="mol-drawing">
           <canvas id="${canvasId}" width="200" height="120"></canvas>
         </div>
       `;
 
-      if (!isDefault) {
-        div.addEventListener("dblclick", function() {
-          div.remove();
-        });
-      }
+      div.addEventListener("dblclick", function () {
+        div.remove();
+      });
 
       board.appendChild(div);
       makeDraggable(div);
-      renderSmilesToCanvas(canvasId, smiles);
-
-      return div;
+      renderSmilesToCanvas(canvasId, molecule.smiles);
     }
 
     function addSelectedMolecule() {
       const select = document.getElementById("moleculeSelect");
-      const key = select.value;
-      const mol = moleculeLibrary[key];
+      const mol = moleculeLibrary[select.value];
 
       createMoleculeCard(
         mol,
         120 + (addedCounter % 5) * 45,
-        420 + (addedCounter % 4) * 28,
-        false
+        420 + (addedCounter % 4) * 28
       );
     }
 
     function addSmilesMolecule() {
       const input = document.getElementById("smilesInput");
       const smiles = input.value.trim();
+
       if (!smiles) return;
 
       createMoleculeCard(
@@ -382,32 +408,34 @@ function renderSmilesToCanvas(canvasId, smiles) {
           note: "user-entered SMILES"
         },
         180 + (addedCounter % 4) * 40,
-        440 + (addedCounter % 3) * 28,
-        false
+        440 + (addedCounter % 3) * 28
       );
 
       input.value = "";
     }
 
     function clearAddedMolecules() {
-      document.querySelectorAll(".added-piece").forEach(el => el.remove());
+      document.querySelectorAll(".added-piece").forEach(function (el) {
+        el.remove();
+      });
     }
 
     function resetBoard() {
-      document.querySelectorAll(".default-piece").forEach(el => {
+      document.querySelectorAll(".default-piece").forEach(function (el) {
         if (el.dataset.x && el.dataset.y) {
           el.style.left = el.dataset.x + "px";
           el.style.top = el.dataset.y + "px";
         }
       });
+
       clearAddedMolecules();
     }
 
-    document.querySelectorAll(".piece").forEach(makeDraggable);
-
-    // Draw the two default examples already on the board
-    renderSmilesToCanvas("defaultDrawing1", "c1ccccc1");
-    renderSmilesToCanvas("defaultDrawing2", "Brc1ccccc1");
+    window.onload = function () {
+      document.querySelectorAll(".piece").forEach(makeDraggable);
+      renderSmilesToCanvas("defaultDrawing1", "c1ccccc1");
+      renderSmilesToCanvas("defaultDrawing2", "Brc1ccccc1");
+    };
   </script>
 </body>
 </html>
