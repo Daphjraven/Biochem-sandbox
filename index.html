@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aromatic Ring Sandbox</title>
+  <title>SMILES Molecule Sandbox</title>
+
+  <!-- SmilesDrawer -->
+  <script src="https://unpkg.com/smiles-drawer@2.1.8/dist/smiles-drawer.min.js"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -15,6 +19,7 @@
 
     h2 {
       margin-top: 0;
+      margin-bottom: 10px;
     }
 
     .toolbar {
@@ -25,12 +30,16 @@
       margin-bottom: 14px;
     }
 
-    select, button {
+    select, input, button {
       padding: 8px 12px;
       border-radius: 10px;
       border: 1px solid #b8bfd0;
       font-size: 14px;
       background: white;
+    }
+
+    input {
+      min-width: 260px;
     }
 
     button {
@@ -41,7 +50,7 @@
       position: relative;
       width: 100%;
       max-width: 1200px;
-      height: 700px;
+      height: 720px;
       border: 2px solid #2f3542;
       border-radius: 16px;
       background:
@@ -71,25 +80,32 @@
     .molecule {
       background: white;
       border: 2px solid #444;
-      min-width: 120px;
+      width: 240px;
+      min-height: 190px;
       text-align: center;
     }
 
     .mol-name {
       font-weight: bold;
       font-size: 16px;
-      margin-bottom: 6px;
-    }
-
-    .mol-formula {
-      font-size: 20px;
-      line-height: 1.2;
+      margin-bottom: 4px;
     }
 
     .mol-note {
       font-size: 12px;
       color: #666;
-      margin-top: 6px;
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+
+    .mol-drawing {
+      width: 200px;
+      height: 120px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
     }
 
     .arrow {
@@ -107,24 +123,25 @@
       font-size: 14px;
     }
 
-    .delete-hint {
-      margin-top: 10px;
+    .invalid-smiles {
+      color: #b00020;
       font-size: 13px;
-      color: #555;
+      padding: 8px;
     }
 
+    .delete-hint,
     .footer-note {
-      margin-top: 12px;
+      margin-top: 10px;
       font-size: 13px;
       color: #555;
     }
   </style>
 </head>
 <body>
-  <h2>🌸 Aromatic Ring Sandbox</h2>
+  <h2>🌸 Aromatic Ring Sandbox with SMILES</h2>
 
   <div class="toolbar">
-    <label for="moleculeSelect"><strong>Select aromatic molecule:</strong></label>
+    <label for="moleculeSelect"><strong>Select molecule:</strong></label>
     <select id="moleculeSelect">
       <option value="benzene">Benzene</option>
       <option value="toluene">Toluene</option>
@@ -139,35 +156,37 @@
     </select>
 
     <button onclick="addSelectedMolecule()">Add Molecule</button>
+
+    <input
+      id="smilesInput"
+      type="text"
+      placeholder="Enter custom SMILES, e.g. c1ccccc1O"
+    />
+    <button onclick="addSmilesMolecule()">Add from SMILES</button>
+
     <button onclick="resetBoard()">Reset Board</button>
     <button onclick="clearAddedMolecules()">Clear Added Molecules</button>
   </div>
 
   <div id="board">
-    <div class="piece molecule default-piece" id="default1" data-x="70" data-y="110" style="left:70px; top:110px;">
+    <div class="piece molecule default-piece" id="default1" data-x="60" data-y="80" style="left:60px; top:80px;">
       <div class="mol-name">Benzene</div>
-      <div class="mol-formula">⌬</div>
-      <div class="mol-note">C₆H₆</div>
+      <div class="mol-note">c1ccccc1</div>
+      <div class="mol-drawing" id="defaultDrawing1"></div>
     </div>
 
-    <div class="piece molecule default-piece" id="default2" data-x="70" data-y="290" style="left:70px; top:290px;">
-      <div class="mol-name">Br₂ / FeBr₃</div>
-      <div class="mol-formula">Br₂</div>
-      <div class="mol-note">electrophilic bromination</div>
+    <div class="piece label default-piece" id="default2" data-x="340" data-y="100" style="left:340px; top:100px;">
+      electrophilic aromatic substitution sandbox
     </div>
 
-    <div class="piece arrow default-piece" id="default3" data-x="360" data-y="180" style="left:360px; top:180px;">
+    <div class="piece arrow default-piece" id="default3" data-x="420" data-y="220" style="left:420px; top:220px;">
       ⟶
     </div>
 
-    <div class="piece molecule default-piece" id="default4" data-x="700" data-y="110" style="left:700px; top:110px;">
+    <div class="piece molecule default-piece" id="default4" data-x="650" data-y="80" style="left:650px; top:80px;">
       <div class="mol-name">Bromobenzene</div>
-      <div class="mol-formula">⌬−Br</div>
-      <div class="mol-note">product idea</div>
-    </div>
-
-    <div class="piece label default-piece" id="default5" data-x="300" data-y="90" style="left:300px; top:90px;">
-      aromatic substitution sandbox
+      <div class="mol-note">Bromination example product</div>
+      <div class="mol-drawing" id="defaultDrawing2"></div>
     </div>
   </div>
 
@@ -176,7 +195,7 @@
   </div>
 
   <div class="footer-note">
-    This version uses symbolic molecule cards for easy dragging. Later, you can swap these for actual structure images.
+    You can type a SMILES string and drop the generated molecule right onto the board.
   </div>
 
   <script>
@@ -189,52 +208,52 @@
     const moleculeLibrary = {
       benzene: {
         name: "Benzene",
-        formula: "⌬",
-        note: "C₆H₆"
+        smiles: "c1ccccc1",
+        note: "C6H6"
       },
       toluene: {
         name: "Toluene",
-        formula: "⌬−CH₃",
+        smiles: "Cc1ccccc1",
         note: "methylbenzene"
       },
       phenol: {
         name: "Phenol",
-        formula: "⌬−OH",
+        smiles: "c1ccccc1O",
         note: "hydroxybenzene"
       },
       aniline: {
         name: "Aniline",
-        formula: "⌬−NH₂",
+        smiles: "Nc1ccccc1",
         note: "aminobenzene"
       },
       anisole: {
         name: "Anisole",
-        formula: "⌬−OCH₃",
+        smiles: "COc1ccccc1",
         note: "methoxybenzene"
       },
       benzoic_acid: {
         name: "Benzoic acid",
-        formula: "⌬−COOH",
+        smiles: "O=C(O)c1ccccc1",
         note: "aromatic carboxylic acid"
       },
       chlorobenzene: {
         name: "Chlorobenzene",
-        formula: "⌬−Cl",
+        smiles: "Clc1ccccc1",
         note: "aryl halide"
       },
       nitrobenzene: {
         name: "Nitrobenzene",
-        formula: "⌬−NO₂",
+        smiles: "O=[N+]([O-])c1ccccc1",
         note: "deactivating group"
       },
       bromobenzene: {
         name: "Bromobenzene",
-        formula: "⌬−Br",
+        smiles: "Brc1ccccc1",
         note: "aryl bromide"
       },
       naphthalene: {
         name: "Naphthalene",
-        formula: "⌬⌬",
+        smiles: "c1ccc2ccccc2c1",
         note: "fused aromatic system"
       }
     };
@@ -243,7 +262,6 @@
       el.addEventListener("mousedown", function(e) {
         activePiece = el;
         const rect = el.getBoundingClientRect();
-        const boardRect = board.getBoundingClientRect();
 
         offsetX = e.clientX - rect.left;
         offsetY = e.clientY - rect.top;
@@ -278,47 +296,112 @@
       activePiece = null;
     });
 
+    function renderSmilesToCanvas(canvasId, smiles) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+
+      SmilesDrawer.parse(
+        smiles,
+        function(tree) {
+          const drawer = new SmilesDrawer.Drawer({
+            width: 200,
+            height: 120,
+            compactDrawing: false,
+            padding: 6
+          });
+          drawer.draw(tree, canvas, "light", false);
+        },
+        function() {
+          const parent = canvas.parentElement;
+          parent.innerHTML = `<div class="invalid-smiles">Invalid SMILES</div>`;
+        }
+      );
+    }
+
+    function createMoleculeCard({ name, smiles, note }, left = 140, top = 430, isDefault = false) {
+      addedCounter += 1;
+      const idSuffix = isDefault ? "default_" + addedCounter : "added_" + addedCounter;
+      const canvasId = "canvas_" + idSuffix;
+
+      const div = document.createElement("div");
+      div.className = `piece molecule ${isDefault ? "default-piece" : "added-piece"}`;
+      div.id = idSuffix;
+      div.style.left = left + "px";
+      div.style.top = top + "px";
+
+      div.innerHTML = `
+        <div class="mol-name">${name}</div>
+        <div class="mol-note">${note ? note : ""}</div>
+        <div class="mol-note">${smiles}</div>
+        <div class="mol-drawing">
+          <canvas id="${canvasId}" width="200" height="120"></canvas>
+        </div>
+      `;
+
+      if (!isDefault) {
+        div.addEventListener("dblclick", function() {
+          div.remove();
+        });
+      }
+
+      board.appendChild(div);
+      makeDraggable(div);
+      renderSmilesToCanvas(canvasId, smiles);
+
+      return div;
+    }
+
     function addSelectedMolecule() {
       const select = document.getElementById("moleculeSelect");
       const key = select.value;
       const mol = moleculeLibrary[key];
 
-      addedCounter += 1;
-
-      const div = document.createElement("div");
-      div.className = "piece molecule added-piece";
-      div.id = "added_" + addedCounter;
-      div.style.left = (140 + (addedCounter % 5) * 40) + "px";
-      div.style.top = (430 + (addedCounter % 4) * 28) + "px";
-
-      div.innerHTML = `
-        <div class="mol-name">${mol.name}</div>
-        <div class="mol-formula">${mol.formula}</div>
-        <div class="mol-note">${mol.note}</div>
-      `;
-
-      div.addEventListener("dblclick", function() {
-        div.remove();
-      });
-
-      board.appendChild(div);
-      makeDraggable(div);
+      createMoleculeCard(
+        mol,
+        120 + (addedCounter % 5) * 45,
+        420 + (addedCounter % 4) * 28,
+        false
+      );
     }
 
-    function resetBoard() {
-      document.querySelectorAll(".default-piece").forEach(el => {
-        el.style.left = el.dataset.x + "px";
-        el.style.top = el.dataset.y + "px";
-      });
+    function addSmilesMolecule() {
+      const input = document.getElementById("smilesInput");
+      const smiles = input.value.trim();
+      if (!smiles) return;
 
-      clearAddedMolecules();
+      createMoleculeCard(
+        {
+          name: "Custom Molecule",
+          smiles: smiles,
+          note: "user-entered SMILES"
+        },
+        180 + (addedCounter % 4) * 40,
+        440 + (addedCounter % 3) * 28,
+        false
+      );
+
+      input.value = "";
     }
 
     function clearAddedMolecules() {
       document.querySelectorAll(".added-piece").forEach(el => el.remove());
     }
 
+    function resetBoard() {
+      document.querySelectorAll(".default-piece").forEach(el => {
+        if (el.dataset.x && el.dataset.y) {
+          el.style.left = el.dataset.x + "px";
+          el.style.top = el.dataset.y + "px";
+        }
+      });
+      clearAddedMolecules();
+    }
+
     document.querySelectorAll(".piece").forEach(makeDraggable);
+
+    // Draw the two default examples already on the board
+    renderSmilesToCanvas("defaultDrawing1", "c1ccccc1");
+    renderSmilesToCanvas("defaultDrawing2", "Brc1ccccc1");
   </script>
 </body>
 </html>
