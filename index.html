@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SMILES Molecule Sandbox</title>
 
-  <!-- SmilesDrawer -->
-  <script src="https://unpkg.com/smiles-drawer@2.1.8/dist/smiles-drawer.min.js"></script>
+  <!-- Load SmilesDrawer FIRST -->
+  <script src="https://cdn.jsdelivr.net/npm/smiles-drawer@2.0.3/dist/smiles-drawer.min.js"></script>
+</head>
 
   <style>
     body {
@@ -296,27 +297,32 @@
       activePiece = null;
     });
 
-    function renderSmilesToCanvas(canvasId, smiles) {
-      const canvas = document.getElementById(canvasId);
-      if (!canvas) return;
+function renderSmilesToCanvas(canvasId, smiles) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
 
-      SmilesDrawer.parse(
-        smiles,
-        function(tree) {
-          const drawer = new SmilesDrawer.Drawer({
-            width: 200,
-            height: 120,
-            compactDrawing: false,
-            padding: 6
-          });
-          drawer.draw(tree, canvas, "light", false);
-        },
-        function() {
-          const parent = canvas.parentElement;
-          parent.innerHTML = `<div class="invalid-smiles">Invalid SMILES</div>`;
-        }
-      );
+  if (typeof SmilesDrawer === "undefined") {
+    const parent = canvas.parentElement;
+    parent.innerHTML = `<div class="invalid-smiles">SmilesDrawer failed to load</div>`;
+    return;
+  }
+
+  SmilesDrawer.parse(
+    smiles,
+    function(tree) {
+      const drawer = new SmilesDrawer.Drawer({
+        width: 200,
+        height: 120,
+        padding: 6
+      });
+      drawer.draw(tree, canvas, "light", false);
+    },
+    function() {
+      const parent = canvas.parentElement;
+      parent.innerHTML = `<div class="invalid-smiles">Invalid SMILES</div>`;
     }
+  );
+}
 
     function createMoleculeCard({ name, smiles, note }, left = 140, top = 430, isDefault = false) {
       addedCounter += 1;
